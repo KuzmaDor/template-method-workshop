@@ -29,17 +29,21 @@ public abstract class GameAI {
 
         System.out.println("\n> " + name + " [" + "Units: " + units + ", Buildings: " + structures + ", Gold: " + gold + ", Wood: " + wood + "]");
 
+        System.out.println("step 1.");
         collectResources();
+
+        System.out.println("step 2.");
         buildStructures();
-        
+
         if (checkDefeat()) {
+            System.out.println("optional step 2,5.");
             System.out.println(getDefeatMessage());
             isDefeated = true;
             return;
         }
 
+        System.out.println("step 3.");
         buildUnits();
-
         performAttackPhase(enemies);
     }
 
@@ -55,15 +59,15 @@ public abstract class GameAI {
     // Common behavior for all Game AIs
     protected void collectResources() {
         if (structures > 0) {
-            int gainedGold = (random.nextInt(31) + 20) * structures; // 20-50 per structure
-            int gainedWood = (random.nextInt(21) + 10) * structures; // 10-30 per structure
+            int gainedWood = (random.nextInt(21) + 10) * structures;
+            int gainedGold = (random.nextInt(31) + 20) * structures;
             gold += gainedGold;
             wood += gainedWood;
             System.out.println("   [WORK] Generic workers gathered +" + gainedGold + "G, +" + gainedWood + "W.");
         }
     }
 
-    // Primitive operations to be implemented by specific AI (subclasses)
+    // Abstract methods to be overwritten by subclasses
     protected abstract void buildStructures();
     protected abstract void buildUnits();
 
@@ -97,7 +101,6 @@ public abstract class GameAI {
     }
 
     protected void onVictory(GameAI target) {
-        // Winner logic
         double pillageMultiplier = getPillageMultiplier();
         int stolenGold = (int) (target.gold * pillageMultiplier);
         int stolenWood = (int) (target.wood * pillageMultiplier);
@@ -111,7 +114,6 @@ public abstract class GameAI {
         
         applyCasualties(target, winnerLosses, loserLosses);
 
-        // Decisive hit: destroy structures
         int minDestroy = Math.min(2, target.structures);
         int destroyed = target.structures > 0 ? minDestroy + random.nextInt(target.structures - minDestroy + 1) : 0;
         target.structures -= destroyed;
@@ -122,21 +124,21 @@ public abstract class GameAI {
     }
 
     protected void onDefeat(GameAI target) {
-        int loss = (int)(this.units * 0.4); // 40% loss for failed attack
+        int loss = (int)(this.units * 0.4);
         this.units -= loss;
         System.out.println("   [DEFEAT] DISASTROUS DEFEAT. The assault failed, losing " + loss + " units in the bloody retreat.");
     }
 
     protected double getPillageMultiplier() {
-        return 0.5; // Default steals 50%
+        return 0.5;
     }
 
     protected int calculateWinnerLosses() {
-        return (int) (this.units * random.nextDouble() * 0.3); // 0-30% loss
+        return (int) (this.units * random.nextDouble() * 0.3);
     }
 
     protected int calculateLoserLosses(GameAI target) {
-        return (int) (target.units * (0.5 + random.nextDouble() * 0.5)); // 50-100% loss
+        return (int) (target.units * (0.5 + random.nextDouble() * 0.5));
     }
 
     protected void applyCasualties(GameAI target, int winnerLosses, int loserLosses) {

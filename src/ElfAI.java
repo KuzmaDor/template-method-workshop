@@ -8,7 +8,7 @@ public class ElfAI extends GameAI {
     protected void buildStructures() {
         int built = 0;
         // Elves balance structures and units, so they save some wood for units
-        while (wood >= 100) { // Keep at least 20 wood for one unit
+        while (wood >= 100) {
             wood -= 80;
             structures++;
             built++;
@@ -28,7 +28,6 @@ public class ElfAI extends GameAI {
         if (trained > 0) System.out.println("   [TRAIN] " + trained + " Elite Archers stepped out gracefully from the shadows. (-" + (trained*40) + "G/-" + (trained*20) + "W)");
     }
 
-    // Elf overrides the resource collection method
     @Override
     protected void collectResources() {
         if (structures > 0) {
@@ -39,16 +38,5 @@ public class ElfAI extends GameAI {
             System.out.println("   [WORK] Wisps gently coaxed the forest: +" + gainedGold + "G, +" + gainedWood + "W.");
         }
     }
-    
-    // Elf overrides attack to simulate ranged combat advantage
-    @Override
-    protected boolean shouldAttack(java.util.List<GameAI> enemies) {
-        if (units > 0 && !enemies.isEmpty()) {
-            System.out.println("   [ATTACK] [Elune's Light!] A flurry of glowing arrows rains from above!");
-            return true;
-        } else {
-             System.out.println("   [IDLE] The Sentinels remain concealed, waiting for reinforcements.");
-             return false;
-        }
-    }
+
 }
