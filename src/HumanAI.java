@@ -5,27 +5,34 @@ public class HumanAI extends GameAI {
     }
 
     @Override
-    protected void collectResources() {
-        if (structures > 0) {
-            int gainedGold = (random.nextInt(16) + 30) * structures;
-            int gainedWood = (random.nextInt(16) + 20) * structures;
-            gold += gainedGold;
-            wood += gainedWood;
-            System.out.println("   [WORK] 'Right-o!' Peasants diligently gathered +" + gainedGold + "G, +" + gainedWood + "W.");
-        }
-    }
-
-    @Override
     protected void buildStructures() {
         int built = 0;
         int buildingsCost = 25; // Cheaper buildings
-        while (gold >= buildingsCost && wood >= buildingsCost) {
-            gold -= buildingsCost;
-            wood -= buildingsCost;
+
+        // Humans are builders, but they intentionally only invest half their stockpile
+        // into construction each turn so they can also field an army.
+        int buildGoldBudget = gold / 2;
+        int buildWoodBudget = wood / 2;
+
+        while (buildGoldBudget >= buildingsCost && buildWoodBudget >= buildingsCost) {
+            buildGoldBudget -= buildingsCost;
+            buildWoodBudget -= buildingsCost;
             structures++;
             built++;
         }
-        if (built > 0) System.out.println("   [BUILD] 'Job's done!' " + built + " splendid buildings were erected! (-" + (built*buildingsCost) + "G/-" + (built*buildingsCost) +"W)");
+
+        // Spend only what we actually used from the building budget.
+        int spentGold = (gold / 2) - buildGoldBudget;
+        int spentWood = (wood / 2) - buildWoodBudget;
+        gold -= spentGold;
+        wood -= spentWood;
+
+        if (built > 0) {
+            System.out.println(
+                "   [BUILD] 'Job's done!' Built " + built + " structures (spent " + spentGold + "G / "
+                    + spentWood + "W of this turn's budget)"
+            );
+        }
     }
 
     @Override
@@ -42,12 +49,17 @@ public class HumanAI extends GameAI {
 
     @Override
     protected boolean shouldAttack(java.util.List<GameAI> enemies) {
-        if (units >= 2 && !enemies.isEmpty()) {
-            System.out.println("   [CHARGE] [For the Alliance!] The King's army raises their shields and charges forth!");
-            return true;
-        } else {
-            System.out.println("   [IDLE] The garrison maintains their formation, waiting for sufficient numbers to attack.");
-            return false;
-        }
+        return units >= 2 && !enemies.isEmpty();
+    }
+
+    @Override
+    protected void onSkipAttack(java.util.List<GameAI> validTargets) {
+        System.out.println("   [IDLE] The garrison drills in perfect formation... waiting for the order to march.");
+    }
+
+    @Override
+    protected void announceAttack(GameAI target) {
+        System.out.println("   [ATTACK] " + name + " marches on " + target.getName() + " ("
+            + units + " vs " + target.units + ") — 'For the Alliance!'");
     }
 }

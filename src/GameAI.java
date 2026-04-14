@@ -29,22 +29,19 @@ public abstract class GameAI {
 
         System.out.println("\n> " + name + " [" + "Units: " + units + ", Buildings: " + structures + ", Gold: " + gold + ", Wood: " + wood + "]");
 
-        System.out.println("step 1.");
-        collectResources();
-
-        System.out.println("step 2.");
-        buildStructures();
-
         if (checkDefeat()) {
-            System.out.println("optional step 2,5.");
             System.out.println(getDefeatMessage());
             isDefeated = true;
             return;
         }
 
-        System.out.println("step 3.");
+        collectResources();
+
+        buildStructures();
+
         buildUnits();
-        performAttackPhase(enemies);
+
+        attackPhase(enemies);
     }
 
     // Default losing condition that can be overwritten by subclasses.
@@ -63,41 +60,77 @@ public abstract class GameAI {
             int gainedGold = (random.nextInt(31) + 20) * structures;
             gold += gainedGold;
             wood += gainedWood;
-            System.out.println("   [WORK] Generic workers gathered +" + gainedGold + "G, +" + gainedWood + "W.");
+            System.out.println("   [WORK] +" + gainedGold + "G +" + gainedWood + "W (x" + structures + " structures)");
         }
     }
 
     // Abstract methods to be overwritten by subclasses
     protected abstract void buildStructures();
+
     protected abstract void buildUnits();
 
-    // The attack phase logic
-    protected final void performAttackPhase(List<GameAI> enemies) {
-        List<GameAI> validTargets = enemies.stream()
-            .filter(e -> e != this && !e.isDefeated())
-            .toList();
+    protected final void attackPhase(List<GameAI> allPlayers) {
+        List<GameAI> validTargets = findValidTargets(allPlayers);
 
-        // Subclasses may optionally decide whether to attack or not
         if (!shouldAttack(validTargets)) {
-            System.out.println("   [IDLE] No battles fought this turn.");
+            onSkipAttack(validTargets);
             return;
         }
 
-        GameAI target = validTargets.get(random.nextInt(validTargets.size()));
-        System.out.println("   [ATTACK] " + name + " engages " + target.getName() + "! (" + units + " units vs " + target.units + " units)");
-        executeCombat(target);
+        GameAI target = chooseTarget(validTargets);
+        if (target == null) {
+            onSkipAttack(validTargets);
+            return;
+        }
+
+        announceAttack(target);
+        resolveCombat(target);
     }
 
+    // Hook: what counts as a valid target?
+    protected List<GameAI> findValidTargets(List<GameAI> allPlayers) {
+        return allPlayers.stream()
+            .filter(e -> e != this && !e.isDefeated())
+            .collect(Collectors.toList());
+    }
+
+    // Hook: should we attack this turn?
     protected boolean shouldAttack(List<GameAI> validTargets) {
         return !validTargets.isEmpty() && units > 0;
     }
 
-    protected void executeCombat(GameAI target) {
-        if (this.units > target.units) {
+    // Hook: message when skipping an attack.
+    protected void onSkipAttack(List<GameAI> validTargets) {
+        System.out.println("   [IDLE] No battles this turn.");
+    }
+
+    // Hook: how do we pick a target?
+    protected GameAI chooseTarget(List<GameAI> validTargets) {
+        if (validTargets.isEmpty()) return null;
+        return validTargets.get(random.nextInt(validTargets.size()));
+    }
+
+    // Hook: how do we announce attacks?
+    protected void announceAttack(GameAI target) {
+        System.out.println(
+            "   [ATTACK] " + name + " attacks " + target.getName() + " ("
+                + units + " vs " + target.units + ")"
+        );
+    }
+
+    // Fixed combat entry point (can be extended by overriding compareForOutcome / onVictory / onDefeat).
+    protected final void resolveCombat(GameAI target) {
+        int outcome = compareForOutcome(target);
+        if (outcome > 0) {
             onVictory(target);
         } else {
             onDefeat(target);
         }
+    }
+
+    // Hook: decide combat outcome (>0 => attacker wins, <=0 => attacker loses)
+    protected int compareForOutcome(GameAI target) {
+        return Integer.compare(this.units, target.units);
     }
 
     protected void onVictory(GameAI target) {
@@ -114,19 +147,19 @@ public abstract class GameAI {
         
         applyCasualties(target, winnerLosses, loserLosses);
 
-        int minDestroy = Math.min(2, target.structures);
-        int destroyed = target.structures > 0 ? minDestroy + random.nextInt(target.structures - minDestroy + 1) : 0;
-        target.structures -= destroyed;
+        int destroyed = destroyEnemyStructures(target);
 
-        System.out.println("   [VICTORY] DECISIVE VICTORY! Pillaged " + stolenGold + "G & " + stolenWood + "W.");
-        System.out.println("       Casualties: Lost " + winnerLosses + " units. Slain " + loserLosses + " enemies.");
-        if (destroyed > 0) System.out.println("       [DESTROY] Razed " + destroyed + " enemy structures to the ground!\n");
+        System.out.println("   [VICTORY] Pillaged " + stolenGold + "G and " + stolenWood + "W");
+        System.out.println("           Losses: " + winnerLosses + " (you), " + loserLosses + " (enemy)");
+        if (destroyed > 0) {
+            System.out.println("           Structures destroyed: " + destroyed);
+        }
     }
 
     protected void onDefeat(GameAI target) {
         int loss = (int)(this.units * 0.4);
         this.units -= loss;
-        System.out.println("   [DEFEAT] DISASTROUS DEFEAT. The assault failed, losing " + loss + " units in the bloody retreat.");
+        System.out.println("   [DEFEAT] " + name + " was repelled by " + target.getName() + " and lost " + loss + " units");
     }
 
     protected double getPillageMultiplier() {
@@ -144,5 +177,27 @@ public abstract class GameAI {
     protected void applyCasualties(GameAI target, int winnerLosses, int loserLosses) {
         this.units -= winnerLosses;
         target.units -= loserLosses;
+    }
+
+    // Hook: default structure destruction rule (min 2 .. max target.structures)
+    // Subclasses may override if their win condition differs.
+    protected int destroyEnemyStructures(GameAI target) {
+        if (target.structures <= 0) return 0;
+        int minDestroy = Math.min(getMinStructureDestruction(), target.structures);
+        int maxDestroy = Math.min(getMaxStructureDestruction(target), target.structures);
+        if (maxDestroy <= 0) return 0;
+        if (minDestroy > maxDestroy) minDestroy = maxDestroy;
+
+        int destroyed = minDestroy + random.nextInt(maxDestroy - minDestroy + 1);
+        target.structures -= destroyed;
+        return destroyed;
+    }
+
+    protected int getMinStructureDestruction() {
+        return 2;
+    }
+
+    protected int getMaxStructureDestruction(GameAI target) {
+        return target.structures;
     }
 }

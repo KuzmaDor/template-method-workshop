@@ -7,7 +7,6 @@ public class ElfAI extends GameAI {
     @Override
     protected void buildStructures() {
         int built = 0;
-        // Elves balance structures and units, so they save some wood for units
         while (wood >= 100) {
             wood -= 80;
             structures++;
@@ -32,11 +31,22 @@ public class ElfAI extends GameAI {
     protected void collectResources() {
         if (structures > 0) {
             int gainedGold = (random.nextInt(21) + 15) * structures;
-            int gainedWood = (random.nextInt(31) + 25) * structures; // Elves get more wood
+            int gainedWood = (random.nextInt(31) + 25) * structures;
             gold += gainedGold;
             wood += gainedWood;
-            System.out.println("   [WORK] Wisps gently coaxed the forest: +" + gainedGold + "G, +" + gainedWood + "W.");
+            System.out.println("   [WORK] Elves' custom resource collection method: " + gainedGold + "G, +" + gainedWood + "W.");
         }
+    }
+
+    @Override
+    protected void onSkipAttack(java.util.List<GameAI> validTargets) {
+        System.out.println("   [IDLE] The sentinels melt back into the treeline... the forest says 'not yet.'");
+    }
+
+    @Override
+    protected void announceAttack(GameAI target) {
+        System.out.println("   [ATTACK] " + name + " strikes from the leaves at " + target.getName() + " ("
+            + units + " vs " + target.units + ") — 'You never saw us.'");
     }
 
 }

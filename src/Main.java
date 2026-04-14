@@ -7,10 +7,10 @@ public class Main {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
 
-        String orcName = "Junior devs";
-        String elfName = "Dutch people";
-        String undeadName = "Senior devs";
-        String humanName = "Jonathan and his book club";
+        String orcName = "*Junior devs*";
+        String elfName = "*Dutch people*";
+        String undeadName = "*Senior devs*";
+        String humanName = "*Jonathan and his book club*";
 
         List<GameAI> players = new ArrayList<>();
         players.add(new OrcAI(orcName));

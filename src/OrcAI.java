@@ -21,10 +21,7 @@ public class OrcAI extends GameAI {
     }
 
     @Override
-    protected void buildStructures() {
-        // Orcs don't build structures anymore
-        System.out.println("   [IDLE] Orcs don't build, they only WAAAGH!");
-    }
+    protected void buildStructures() {}
 
     @Override
     protected void buildUnits() {
@@ -37,15 +34,21 @@ public class OrcAI extends GameAI {
         if (trained > 0) System.out.println("   [TRAIN] " + trained + " Grunts emerged screaming from the pits! (-" + (trained*12) + "G)");
     }
 
-    // Custom condition for Orc attack
+    // Orcs attack whenever they have at least a small mob worth sending.
+    // (No printing here: the template method will call onSkipAttack()/announceAttack().)
     @Override
     protected boolean shouldAttack(java.util.List<GameAI> validTargets) {
-        if (!validTargets.isEmpty() && units >= 2) {
-            System.out.println("   [WAAAGH!] The warlord howls as the horde blindly charges!");
-            return true;
-        } else {
-            System.out.println("   [IDLE] The warlord grumbles, gathering more boys for a proper WAAAGH.");
-            return false;
-        }
+        return !validTargets.isEmpty() && units >= 2;
+    }
+
+    @Override
+    protected void onSkipAttack(java.util.List<GameAI> validTargets) {
+        System.out.println("   [IDLE] The warlord grumbles: 'Not enough boyz yet... next turn, BIG WAAAGH.'");
+    }
+
+    @Override
+    protected void announceAttack(GameAI target) {
+        System.out.println("   [ATTACK] " + name + " unleashes a WAAAGH upon " + target.getName() + " ("
+            + units + " vs " + target.units + ")");
     }
 }
