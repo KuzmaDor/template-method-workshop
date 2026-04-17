@@ -6,7 +6,6 @@ public class OrcAI extends GameAI {
 
     @Override
     protected boolean checkDefeat() {
-        // Orcs only lose if they have no units and no structures (to build more)
         return units <= 0 && structures <= 0;
     }
 
@@ -17,7 +16,7 @@ public class OrcAI extends GameAI {
 
     @Override
     protected double getPillageMultiplier() {
-        return 0.8; // Orcs steal 80% instead of 50%
+        return 0.8; // Orcs steal 80% instead of 50% to make up for no resource generation from buildings
     }
 
     @Override
@@ -26,16 +25,15 @@ public class OrcAI extends GameAI {
     @Override
     protected void buildUnits() {
         int trained = 0;
-        while (gold >= 25 && structures > 0) {
-            gold -= 25;
-            units += 2; // Cheap, fast unit production
-            trained += 2;
+        while (gold >= 30 && wood >= 10 && structures > 0) {
+            gold -= 30;
+            wood -= 10;
+            units++;
+            trained++;
         }
         if (trained > 0) System.out.println("   [TRAIN] " + trained + " Grunts emerged screaming from the pits! (-" + (trained*12) + "G)");
     }
 
-    // Orcs attack whenever they have at least a small mob worth sending.
-    // (No printing here: the template method will call onSkipAttack()/announceAttack().)
     @Override
     protected boolean shouldAttack(java.util.List<GameAI> validTargets) {
         return !validTargets.isEmpty() && units >= 2;

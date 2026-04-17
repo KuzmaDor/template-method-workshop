@@ -9,8 +9,9 @@ public class HumanAI extends GameAI {
         int built = 0;
         int buildingsCost = 25; // Cheaper buildings
 
-        // Humans are builders, but they intentionally only invest half their stockpile
-        // into construction each turn so they can also field an army.
+        // Humans are smort and they only invest half their resources into
+        // building so that they can also train units
+        // (awful balancing decision, change it later)
         int buildGoldBudget = gold / 2;
         int buildWoodBudget = wood / 2;
 
@@ -21,7 +22,6 @@ public class HumanAI extends GameAI {
             built++;
         }
 
-        // Spend only what we actually used from the building budget.
         int spentGold = (gold / 2) - buildGoldBudget;
         int spentWood = (wood / 2) - buildWoodBudget;
         gold -= spentGold;

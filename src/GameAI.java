@@ -118,7 +118,7 @@ public abstract class GameAI {
         );
     }
 
-    // Fixed combat entry point (can be extended by overriding compareForOutcome / onVictory / onDefeat).
+    // Fixed, but "compare for outcome", "on victory" and "on defeat" can be overwritten by subclasses
     protected final void resolveCombat(GameAI target) {
         int outcome = compareForOutcome(target);
         if (outcome > 0) {
@@ -180,7 +180,6 @@ public abstract class GameAI {
     }
 
     // Hook: default structure destruction rule (min 2 .. max target.structures)
-    // Subclasses may override if their win condition differs.
     protected int destroyEnemyStructures(GameAI target) {
         if (target.structures <= 0) return 0;
         int minDestroy = Math.min(getMinStructureDestruction(), target.structures);
